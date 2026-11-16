@@ -8,7 +8,8 @@
         battleId: {{ $battle->id }},
         mySlot: {{ $mySlot }},
         myUserId: {{ auth()->id() }},
-        initialHand: {{ json_encode($orderedHand->map(fn($c) => [
+        baseUrl: {{ Js::from(url()->current()) }},
+        initialHand: {{ Js::from($orderedHand->map(fn ($c) => [
             'id' => $c->id,
             'name' => $c->name,
             'type' => $c->type,
@@ -16,13 +17,13 @@
             'damage' => $c->damage,
             'heal' => $c->heal,
             'block' => $c->block,
-        ])->toJson()) }},
+        ])->values()) }},
         initialHp1: {{ $state->player1_hp }},
         initialHp2: {{ $state->player2_hp }},
         initialEnergy: {{ $mySlot === 1 ? $state->player1_energy : $state->player2_energy }},
-        player1Name: '{{ $battle->player1->name }}',
-        player2Name: '{{ $battle->player2->name }}',
-        deadline: '{{ $state->turn_deadline?->toIso8601String() }}',
+        player1Name: {{ Js::from($battle->player1->name) }},
+        player2Name: {{ Js::from($battle->player2->name) }},
+        deadline: {{ Js::from($state->turn_deadline?->toIso8601String()) }},
      })"
      x-init="init()">
 
@@ -185,7 +186,7 @@
             <h2 class="text-3xl font-bold" :class="winner === mySlot ? 'text-green-400' : 'text-red-400'"
                 x-text="winner === mySlot ? 'VICTORY!' : 'DEFEAT'"></h2>
             <p class="text-slate-400 text-sm mt-2" x-text="winner === mySlot ? '+50 poin' : '-20 poin'"></p>
-            <a :href="'/battle/pvp/' + battleId"
+            <a :href="baseUrl"
                class="inline-block mt-6 bg-gradient-to-r from-cyan-500 to-violet-600 text-white px-8 py-3 rounded-lg font-bold">
                 Lihat Hasil
             </a>
@@ -200,6 +201,7 @@
 function pvpBattle(config) {
     return {
         battleId: config.battleId,
+        baseUrl: (config.baseUrl || '').replace(/\/$/, ''),
         mySlot: config.mySlot,
         myUserId: config.myUserId,
         hand: config.initialHand || [],
@@ -242,7 +244,7 @@ function pvpBattle(config) {
             this.processing = true;
 
             try {
-                const res = await fetch(`/battle/pvp/${this.battleId}/play`, {
+                const res = await fetch(`${this.baseUrl}/play`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -270,7 +272,7 @@ function pvpBattle(config) {
             this.processing = true;
 
             try {
-                const res = await fetch(`/battle/pvp/${this.battleId}/skip`, {
+                const res = await fetch(`${this.baseUrl}/skip`, {
                     method: 'POST',
                     headers: {
                         'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
@@ -291,7 +293,7 @@ function pvpBattle(config) {
             if (this.finished) return;
 
             try {
-                const res = await fetch(`/battle/pvp/${this.battleId}/state`, {
+                const res = await fetch(`${this.baseUrl}/state`, {
                     headers: {
                         'Accept': 'application/json',
                         'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,

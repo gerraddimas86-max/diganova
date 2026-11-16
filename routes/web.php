@@ -46,7 +46,7 @@ Route::middleware('guest')->group(function () {
     Route::post('/login', [LoginController::class, 'store']);
 });
 
-Route::middleware('auth')->group(function () {
+Route::middleware(['auth', 'update.last_seen'])->group(function () {
     Route::post('/logout', [LoginController::class, 'destroy'])->name('logout');
 
     // ============ HUB (Domain Selector) ============
@@ -70,7 +70,7 @@ Route::domain(config('app.event_domain'))->group(function () {
     Route::get('/', [EventController::class, 'home'])->name('event.home');
 
     // -------- Auth Required (Semua fitur Event wajib login) --------
-    Route::middleware('auth')->group(function () {
+    Route::middleware(['auth', 'update.last_seen'])->group(function () {
         
         // Event Public
         Route::get('/events', [EventController::class, 'index'])->name('event.events.index');
@@ -97,7 +97,7 @@ Route::domain(config('app.event_domain'))->group(function () {
     });
 
     // -------- Admin Panel (auth + admin) --------
-    Route::middleware(['auth', 'admin'])
+    Route::middleware(['auth', 'admin', 'update.last_seen'])
         ->prefix('admin')
         ->name('admin.')
         ->group(function () {
@@ -121,7 +121,7 @@ Route::domain(config('app.social_domain'))->group(function () {
     Route::get('/', [SocialHomeController::class, 'home'])->name('social.home');
 
     // -------- Auth Required (Semua fitur Social wajib login) --------
-    Route::middleware('auth')->group(function () {
+    Route::middleware(['auth', 'update.last_seen'])->group(function () {
         
         // Feed Utama
         Route::get('/feed', [SocialPostController::class, 'index'])->name('social.posts.index');
@@ -158,6 +158,11 @@ Route::domain(config('app.social_domain'))->group(function () {
         Route::get('/messages/unread-count', [SocialMessageController::class, 'unreadCount'])->name('social.messages.unread-count');
         Route::get('/messages/{username}', [SocialMessageController::class, 'show'])->name('social.messages.show');
         Route::post('/messages/{username}', [SocialMessageController::class, 'send'])->name('social.messages.send');
+        
+        // ✅ RUTE EDIT & HAPUS PESAN
+        Route::put('/messages/{username}/{messageId}', [SocialMessageController::class, 'update'])->name('social.messages.update');
+        Route::delete('/messages/{username}/{messageId}', [SocialMessageController::class, 'destroy'])->name('social.messages.destroy');
+        
         Route::get('/messages/{username}/poll', [SocialMessageController::class, 'poll'])->name('social.messages.poll');
 
         // Grup Sosial
@@ -191,7 +196,7 @@ Route::domain(config('app.play_domain'))->group(function () {
     Route::get('/', [PlaygroundController::class, 'index'])->name('play.home');
 
     // -------- Auth Required (Semua fitur Game wajib login) --------
-    Route::middleware('auth')->group(function () {
+    Route::middleware(['auth', 'update.last_seen'])->group(function () {
 
         // Navo Profile
         Route::get('/profile', [PlaygroundNavoProfileController::class, 'show'])->name('play.profile.show');

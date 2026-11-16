@@ -23,6 +23,7 @@ use Illuminate\Notifications\Notifiable;
     'total_points',
     'rank',
     'is_admin',
+    'last_seen_at',
 ])]
 #[Hidden(['password', 'remember_token'])]
 class User extends Authenticatable
@@ -42,6 +43,7 @@ class User extends Authenticatable
             'password' => 'hashed',
             'total_points' => 'integer',
             'is_admin' => 'boolean',
+            'last_seen_at' => 'datetime',
         ];
     }
 

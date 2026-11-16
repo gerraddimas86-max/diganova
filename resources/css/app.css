@@ -3,6 +3,28 @@
 @tailwind utilities;
 
 /* ============================================================
+   LOCAL FONTS — Iceberg + Anta
+   ============================================================ */
+@font-face {
+    font-family: 'Iceberg';
+    src: url('/fonts/iceberg-regular.woff2') format('woff2'),
+         url('/fonts/iceberg-regular.ttf')   format('truetype');
+    font-weight: 400;
+    font-style: normal;
+    font-display: swap;
+    font-feature-settings: normal;
+}
+
+@font-face {
+    font-family: 'Anta';
+    src: url('/fonts/anta-regular.woff2') format('woff2'),
+         url('/fonts/anta-regular.ttf')   format('truetype');
+    font-weight: 400;
+    font-style: normal;
+    font-display: swap;
+}
+
+/* ============================================================
    PAGE TRANSITIONS — View Transitions API + Fallback
    ============================================================ */
 
