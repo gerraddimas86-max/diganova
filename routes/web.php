@@ -29,6 +29,7 @@ use App\Http\Controllers\Social\SocialGroupController;
 use App\Http\Controllers\Social\SocialGroupMemberController;
 use App\Http\Controllers\Social\SocialHomeController;
 use App\Http\Controllers\Social\TrendingController as SocialTrendingController;
+use App\Http\Controllers\GoogleController;
 use App\Http\Controllers\TicketController;
 use Illuminate\Support\Facades\Route;
 
@@ -44,6 +45,18 @@ Route::middleware('guest')->group(function () {
     Route::post('/register', [RegisterController::class, 'store']);
     Route::get('/login', [LoginController::class, 'show'])->name('login');
     Route::post('/login', [LoginController::class, 'store']);
+});
+
+// ✅ RUTE GOOGLE OAUTH (Dipindahkan ke sini agar bisa diakses dari localhost)
+Route::get('/auth/google', [GoogleController::class, 'redirect'])->name('auth.google');
+Route::get('/auth/google/callback', [GoogleController::class, 'callback'])->name('auth.google.callback');
+
+// ✅ RUTE PENAMPUNG DOMAIN UTAMA (Mencegah 404 saat logout / akses localhost)
+Route::get('/', function () {
+    if (auth()->check()) {
+        return redirect()->route('hub'); // Jika sudah login, ke Hub
+    }
+    return redirect()->route('login'); // Jika belum login, ke Halaman Login
 });
 
 Route::middleware(['auth', 'update.last_seen'])->group(function () {

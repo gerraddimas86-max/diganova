@@ -24,6 +24,8 @@ use Illuminate\Notifications\Notifiable;
     'rank',
     'is_admin',
     'last_seen_at',
+    'google_id', 
+    'avatar'
 ])]
 #[Hidden(['password', 'remember_token'])]
 class User extends Authenticatable

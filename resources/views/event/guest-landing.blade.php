@@ -7,852 +7,954 @@
     <link rel="icon" href="{{ asset('images/logo.png') }}">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link rel="preload" href="{{ asset('fonts/iceberg-regular.woff2') }}" as="font" type="font/woff2" crossorigin>
-    <link rel="preload" href="{{ asset('fonts/anta-regular.woff2') }}" as="font" type="font/woff2" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,200..800&display=swap" rel="stylesheet">
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 
-    {{-- Set tema sebelum paint biar nggak kedip --}}
+    {{-- ============================================================
+         DETEKSI AWAL — harus SEBELUM paint (anti-flash)
+         Logika:
+         - reload / first visit          → intro
+         - navigasi apapun (link, back)  → arrival transition
+         ============================================================ --}}
     <script>
-    (function(){
-        const saved = localStorage.getItem('diganova.theme');
-        const sys = window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
-        document.documentElement.setAttribute('data-theme', saved || sys);
+    (function () {
+        try {
+            if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+
+            const nav = performance.getEntriesByType && performance.getEntriesByType('navigation')[0];
+            const navType = nav ? nav.type : 'navigate';
+            const visited = sessionStorage.getItem('diganova:visited') === '1';
+
+            if (navType === 'reload' || !visited) {
+                sessionStorage.setItem('diganova:visited', '1');
+                document.documentElement.classList.add('show-intro');
+            } else {
+                // Navigasi apapun (link, back button, direct URL) → transition
+                document.documentElement.classList.add('is-from-nav');
+            }
+        } catch (e) {}
     })();
     </script>
 
     <style>
-        /* ============================================================
-           FONTS
-           ============================================================ */
-        @font-face {
-            font-family: 'Iceberg';
-            src: url('/fonts/iceberg-regular.woff2') format('woff2'),
-                 url('/fonts/iceberg-regular.ttf') format('truetype');
-            font-weight: 400; font-style: normal; font-display: swap;
-        }
-        @font-face {
-            font-family: 'Anta';
-            src: url('/fonts/anta-regular.woff2') format('woff2'),
-                 url('/fonts/anta-regular.ttf') format('truetype');
-            font-weight: 400; font-style: normal; font-display: swap;
-        }
-
-        /* ============================================================
-           TOKENS — palette tetap: hitam / putih / cyan
-           ============================================================ */
-        :root {
-            --bg:            #000000;
-            --text:          #FFFFFF;
-            --muted:         rgba(255,255,255,.56);
-            --faint:         rgba(255,255,255,.34);
-            --line:          rgba(255,255,255,.12);
-            --line-strong:   rgba(255,255,255,.24);
-            --grid:          rgba(255,255,255,.055);
-            --panel:         rgba(255,255,255,.035);
-            --panel-solid:   #0A0A0A;
-
-            --cyan:          #22D3EE;
-            --accent-text:   #22D3EE;
-            --cyan-ink:      #04141A;
-
-            --glow:          rgba(34,211,238,.16);
-            --shadow:        0 40px 80px -40px rgba(0,0,0,.85);
-        }
-        [data-theme="light"] {
-            --bg:            #FFFFFF;
-            --text:          #0A0A0A;
-            --muted:         rgba(0,0,0,.56);
-            --faint:         rgba(0,0,0,.38);
-            --line:          rgba(0,0,0,.10);
-            --line-strong:   rgba(0,0,0,.22);
-            --grid:          rgba(0,0,0,.055);
-            --panel:         rgba(0,0,0,.022);
-            --panel-solid:   #FAFAFA;
-
-            --accent-text:   #0E7490;
-            --glow:          rgba(34,211,238,.22);
-            --shadow:        0 40px 80px -50px rgba(0,0,0,.22);
-        }
-
-        /* ============================================================
-           BASE
-           ============================================================ */
+        /* ===== BASE ===== */
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
         html { scroll-behavior: smooth; }
-        html, body { background: var(--bg); }
+        html, body { background: #090E39; }
         body {
             margin: 0;
             min-height: 100vh;
-            display: flex;
-            flex-direction: column;
-            font-family: 'Anta', system-ui, sans-serif;
-            font-weight: 400;
-            color: var(--text);
+            font-family: 'Bricolage Grotesque', system-ui, sans-serif;
+            color: #fff;
             -webkit-font-smoothing: antialiased;
             overflow-x: hidden;
-            transition: background-color .35s ease, color .35s ease;
         }
-        :where(a, button, [tabindex]):focus-visible {
-            outline: 2px solid var(--cyan);
-            outline-offset: 3px;
-            border-radius: 2px;
-        }
+        .font-display { font-family: 'Bricolage Grotesque', system-ui, sans-serif; }
+
+        /* ===== Skip link ===== */
         .skip-link {
-            position: fixed; top: -80px; left: 50%; transform: translateX(-50%);
-            z-index: 999; background: var(--cyan); color: var(--cyan-ink);
-            padding: .7rem 1.4rem; font-size: .8rem; text-decoration: none;
-            border-radius: 2px; transition: top .2s ease;
+            position: fixed; top: -100px; left: 50%; transform: translateX(-50%);
+            z-index: 999; background: #fff; color: #090E39;
+            padding: .7rem 1.4rem; font-weight: 800; font-size: .85rem;
+            border-radius: .75rem; text-decoration: none;
+            border: 2px solid #4382DF;
+            box-shadow: 4px 4px 0 #4382DF;
+            transition: top .2s ease;
         }
         .skip-link:focus { top: 1rem; }
 
-        /* ============================================================
-           TIPOGRAFI
-           ============================================================ */
-        .h-display {
-            font-family: 'Iceberg', serif;
-            font-weight: 400;
-            -webkit-text-stroke: .4px currentColor;
-            letter-spacing: -.015em;
-            line-height: 1.02;
-            margin: 0;
-            color: var(--text);
+        /* ===== Extrude ===== */
+        .ex-w { --ec: #FFFFFF; }
+        .ex-b { --ec: #4382DF; }
+        .ex-i { --ec: #4647AE; }
+        .ex-d { --ec: #112E81; }
+        .ex-k { --ec: #000000; }
+        .extrude {
+            box-shadow:
+                1px 1px 0 var(--ec), 2px 2px 0 var(--ec), 3px 3px 0 var(--ec), 4px 4px 0 var(--ec),
+                5px 5px 0 var(--ec), 6px 6px 0 var(--ec), 7px 7px 0 var(--ec), 8px 8px 0 var(--ec),
+                14px 20px 30px rgba(0,0,0,.5);
         }
-        .kicker {
-            font-family: 'Anta', sans-serif;
-            font-size: .66rem;
-            letter-spacing: .2em;
-            text-transform: uppercase;
+        .extrude-sm {
+            box-shadow:
+                1px 1px 0 var(--ec), 2px 2px 0 var(--ec), 3px 3px 0 var(--ec), 4px 4px 0 var(--ec),
+                8px 12px 18px rgba(0,0,0,.45);
         }
-        .accent { color: var(--accent-text); }
 
-        /* Wordmark: Iceberg (D G N) + Anta (I A O V A) */
-        .wm {
-            display: inline-flex;
-            align-items: baseline;
-            line-height: .85;
-            letter-spacing: .01em;
-            vertical-align: baseline;
+        /* ===== 3D Button ===== */
+        .btn-3d {
+            --ec: #4382DF;
+            transform: translate(var(--tx, 0px), var(--ty, 0px));
+            box-shadow: 6px 6px 0 var(--ec), 6px 14px 24px rgba(0,0,0,.45);
+            transition: transform .15s ease, box-shadow .15s ease;
         }
-        .wm .wm-ice {
-            font-family: 'Iceberg', serif;
-            -webkit-text-stroke: .4px currentColor;
-            color: var(--accent-text);
-            font-size: 1.06em;
+        .btn-3d:hover {
+            transform: translate(calc(var(--tx, 0px) + 3px), calc(var(--ty, 0px) + 3px));
+            box-shadow: 3px 3px 0 var(--ec), 3px 8px 14px rgba(0,0,0,.4);
         }
-        .wm .wm-anta {
-            font-family: 'Anta', sans-serif;
-            -webkit-text-stroke: .3px currentColor;
-            color: currentColor;
-            letter-spacing: .02em;
+        .btn-3d:active {
+            transform: translate(calc(var(--tx, 0px) + 6px), calc(var(--ty, 0px) + 6px));
+            box-shadow: 0 0 0 var(--ec);
         }
-        .wm-sm { font-size: 1.02rem; }
-        .wm-inline { font-size: .9em; }
 
-        /* ============================================================
-           BACKGROUND LAYER
-           ============================================================ */
-        .bg-layer {
-            position: fixed;
-            inset: 0;
-            z-index: 0;
-            pointer-events: none;
-            overflow: hidden;
-        }
-        .bg-glow {
-            position: absolute;
-            top: -32rem;
-            left: 50%;
-            width: 72rem;
-            height: 72rem;
-            transform: translateX(-50%);
-            background: radial-gradient(circle, var(--glow) 0%, transparent 62%);
-            filter: blur(6px);
-        }
-        .bg-grid {
-            position: absolute;
-            inset: 0;
+        /* ===== Grid background ===== */
+        .home-grid {
             background-image:
-                linear-gradient(var(--grid) 1px, transparent 1px),
-                linear-gradient(90deg, var(--grid) 1px, transparent 1px);
-            background-size: 72px 72px;
-            -webkit-mask-image: radial-gradient(ellipse 85% 65% at 50% 0%, #000 25%, transparent 78%);
-                    mask-image: radial-gradient(ellipse 85% 65% at 50% 0%, #000 25%, transparent 78%);
+                linear-gradient(rgba(255,255,255,.05) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255,255,255,.05) 1px, transparent 1px);
+            background-size: 48px 48px;
+            mask-image: radial-gradient(ellipse at 50% 25%, #000 25%, transparent 75%);
+            -webkit-mask-image: radial-gradient(ellipse at 50% 25%, #000 25%, transparent 75%);
         }
 
-        /* ============================================================
-           ANIMASI MASUK
-           ============================================================ */
+        /* ===== Hover pop ===== */
+        .hov-pop {
+            transition: scale .3s cubic-bezier(.3,1.8,.5,1), rotate .3s cubic-bezier(.3,1.8,.5,1), box-shadow .2s;
+        }
+        .hov-pop:hover { scale: 1.05; rotate: -2deg; z-index: 5; }
+
+        /* ===== Tilt ===== */
+        [data-tilt] {
+            position: relative;
+            transition: transform .15s ease-out;
+            transform-style: preserve-3d;
+            will-change: transform;
+        }
+        .glare {
+            position: absolute; inset: 0; border-radius: inherit; pointer-events: none;
+            opacity: 0; transition: opacity .3s; z-index: 5;
+            background: radial-gradient(circle at var(--gx, 50%) var(--gy, 50%), rgba(255,255,255,.3), transparent 50%);
+        }
+        [data-tilt]:hover > .glare { opacity: 1; }
+
+        /* ===== Orbs ===== */
+        .orb {
+            --oc: #4382DF; --os: rgba(9,14,57,.34); --oh: #fff; --oe: #000;
+            border-radius: 9999px; border: 3px solid #fff;
+            background:
+                radial-gradient(ellipse 13% 8% at 27% 23%, var(--oh) 0 92%, transparent 100%),
+                radial-gradient(circle at 32% 30%, transparent 0 60%, var(--os) 61%),
+                var(--oc);
+            box-shadow: 4px 5px 0 var(--oe), 10px 16px 24px rgba(0,0,0,.35);
+        }
+        .orb-i { --oc: #4647AE; --oe: #000; }
+        .orb-w { --oc: #fff; --os: rgba(67,130,223,.4); --oe: #4382DF; }
+        .orb-lg { border-width: 5px; box-shadow: 8px 10px 0 var(--oe), 18px 28px 40px rgba(0,0,0,.35); }
+
+        /* ===== Floating animations ===== */
+        .floaty    { animation: floaty 6s ease-in-out infinite; }
+        .floaty-2  { animation: floaty 7.5s ease-in-out infinite reverse; }
+        .wiggle    { animation: wiggle 2.4s ease-in-out infinite; }
+        .breathe   { animation: breathe 4s ease-in-out infinite; }
+        @keyframes floaty {
+            0%, 100% { transform: translateY(0) rotate(var(--rot, 0deg)); }
+            50%      { transform: translateY(-14px) rotate(calc(var(--rot, 0deg) + 2deg)); }
+        }
+        @keyframes wiggle {
+            0%, 100% { transform: rotate(-5deg); }
+            50%      { transform: rotate(5deg); }
+        }
+        @keyframes breathe {
+            0%, 100% { transform: scale(1); }
+            50%      { transform: scale(1.08); }
+        }
         @keyframes rise {
             from { opacity: 0; transform: translateY(18px); }
             to   { opacity: 1; transform: none; }
         }
-        @keyframes floaty {
-            0%, 100% { translate: 0 0; }
-            50%      { translate: 0 -10px; }
-        }
-        @keyframes spin {
-            to { transform: translate(-50%, -50%) rotate(360deg); }
-        }
-        @keyframes ping {
-            0%        { transform: scale(1);   opacity: .55; }
-            80%, 100% { transform: scale(2.6); opacity: 0; }
-        }
         .rise {
             opacity: 0;
-            animation: rise .8s cubic-bezier(.2,.8,.2,1) forwards;
-            animation-delay: calc(var(--i, 0) * 80ms + 100ms);
+            animation: rise .7s cubic-bezier(.2,.8,.2,1) forwards;
+            animation-delay: calc(var(--i, 0) * 90ms + 80ms);
         }
 
         /* ============================================================
-           TOPBAR
+           INTRO LOADER — versi baru (lebih menarik)
            ============================================================ */
-        .topbar {
-            position: relative;
-            z-index: 5;
-            width: 100%;
-            max-width: 1180px;
-            margin: 0 auto;
-            padding: 1.5rem 1.5rem 0;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            gap: 1rem;
-        }
-        .brand {
-            display: inline-flex;
-            align-items: center;
-            gap: .7rem;
-            text-decoration: none;
-            color: var(--text);
-        }
-        .brand img {
-            width: 2.1rem;
-            height: 2.1rem;
-            object-fit: contain;
-            display: block;
-        }
-        .brand-text {
-            display: flex;
-            flex-direction: column;
-            line-height: 1;
-        }
-        .brand-tag {
-            margin-top: .4rem;
-            font-size: .5rem;
-            letter-spacing: .16em;
-            text-transform: uppercase;
-            color: var(--faint);
-            white-space: nowrap;
-        }
-        .topbar-actions {
-            display: flex;
-            align-items: center;
-            gap: .6rem;
-        }
-        .link-login {
-            display: inline-flex;
-            align-items: center;
-            padding: .6rem .9rem;
-            font-size: .76rem;
-            letter-spacing: .06em;
-            color: var(--muted);
-            text-decoration: none;
-            border-radius: 2px;
-            transition: color .18s ease;
-        }
-        .link-login:hover { color: var(--accent-text); }
-
-        /* Theme toggle */
-        .theme-toggle {
-            position: relative;
-            width: 2.5rem;
-            height: 2.5rem;
+        .intro-loader {
+            position: fixed;
+            inset: 0;
+            z-index: 10000;
             display: grid;
             place-items: center;
-            background: transparent;
-            border: 1px solid var(--line);
-            border-radius: 999px;
-            color: var(--text);
-            cursor: pointer;
-            padding: 0;
-            overflow: hidden;
-            flex-shrink: 0;
-            transition: border-color .2s ease, color .2s ease;
+            background: #090E39;
+            opacity: 0;
+            visibility: hidden;
+            pointer-events: none;
+            transition: opacity .45s ease, visibility 0s ease .45s;
         }
-        .theme-toggle:hover { border-color: var(--cyan); color: var(--accent-text); }
-        .theme-toggle svg {
+        html.show-intro .intro-loader {
+            opacity: 1;
+            visibility: visible;
+            pointer-events: auto;
+            transition: opacity .45s ease, visibility 0s ease 0s;
+        }
+
+        /* Ambient glow di belakang */
+        .intro-bg-glow {
             position: absolute;
-            width: 15px;
-            height: 15px;
-            transition: transform .4s cubic-bezier(.3,1.4,.5,1), opacity .3s ease;
+            inset: 0;
+            pointer-events: none;
+            background:
+                radial-gradient(circle at 50% 45%, rgba(67,130,223,.22) 0%, transparent 55%),
+                radial-gradient(circle at 50% 45%, rgba(70,71,174,.28) 0%, transparent 75%);
+            animation: introGlowPulse 3s ease-in-out infinite;
         }
-        .theme-toggle .icon-sun  { opacity: 1; transform: rotate(0) scale(1); }
-        .theme-toggle .icon-moon { opacity: 0; transform: rotate(-180deg) scale(0); }
-        [data-theme="light"] .theme-toggle .icon-sun  { opacity: 0; transform: rotate(180deg) scale(0); }
-        [data-theme="light"] .theme-toggle .icon-moon { opacity: 1; transform: rotate(0) scale(1); }
+        @keyframes introGlowPulse {
+            0%, 100% { opacity: .55; transform: scale(1); }
+            50%      { opacity: 1;   transform: scale(1.05); }
+        }
 
-        /* ============================================================
-           BUTTONS
-           ============================================================ */
-        .btn {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            gap: .55rem;
-            padding: .95rem 1.55rem;
-            font-family: 'Anta', sans-serif;
-            font-size: .76rem;
-            letter-spacing: .1em;
-            text-transform: uppercase;
-            text-decoration: none;
-            border: 1px solid transparent;
-            border-radius: 2px;
-            cursor: pointer;
-            transition: transform .18s ease, box-shadow .18s ease,
-                        background-color .18s ease, border-color .18s ease, color .18s ease;
-        }
-        .btn-sm { padding: .6rem 1.05rem; font-size: .68rem; }
-        .btn-primary {
-            background: var(--cyan);
-            color: var(--cyan-ink);
-            border-color: var(--cyan);
-        }
-        .btn-primary:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 14px 34px -14px var(--cyan);
-        }
-        .btn-ghost {
-            background: transparent;
-            color: var(--text);
-            border-color: var(--line-strong);
-        }
-        .btn-ghost:hover {
-            transform: translateY(-2px);
-            border-color: var(--cyan);
-            color: var(--accent-text);
-        }
-        .btn:active { transform: translateY(0); }
-
-        /* ============================================================
-           HERO — satu-satunya section
-           ============================================================ */
-        .hero-wrap {
+        .intro-content {
             position: relative;
             z-index: 2;
-            flex: 1;
-            display: flex;
-            align-items: center;
-        }
-        .hero {
-            width: 100%;
-            max-width: 1180px;
-            margin: 0 auto;
-            padding: clamp(2.5rem, 6vh, 4.5rem) 1.5rem clamp(3rem, 6vh, 4.5rem);
-            display: grid;
-            gap: clamp(3rem, 6vw, 5rem);
-            align-items: center;
-        }
-        @media (min-width: 1024px) {
-            .hero { grid-template-columns: 1.05fr .95fr; }
-        }
-
-        /* --- Kolom kiri --- */
-        .eyebrow {
-            display: inline-flex;
-            align-items: center;
-            gap: .6rem;
-            padding: .5rem .9rem .5rem .75rem;
-            border: 1px solid var(--line);
-            border-radius: 999px;
-            background: var(--panel);
-            color: var(--muted);
-            font-size: .64rem;
-            letter-spacing: .18em;
-            text-transform: uppercase;
-            white-space: nowrap;
-        }
-        .eyebrow .dot {
-            width: 6px;
-            height: 6px;
-            border-radius: 50%;
-            background: var(--cyan);
-            box-shadow: 0 0 10px var(--cyan);
-            flex-shrink: 0;
-        }
-
-        .headline {
-            margin: 1.6rem 0 0;
-            font-size: clamp(2.5rem, 6.2vw, 4.4rem);
-        }
-        .headline .br-lg { display: none; }
-        @media (min-width: 640px) { .headline .br-lg { display: block; } }
-
-        .lede {
-            margin: 1.5rem 0 0;
-            max-width: 32rem;
-            font-size: clamp(.98rem, 1.5vw, 1.08rem);
-            line-height: 1.75;
-            color: var(--muted);
-        }
-
-        .hero-cta {
-            margin-top: 2.2rem;
-            display: flex;
-            flex-wrap: wrap;
-            gap: .75rem;
-        }
-
-        .hero-meta {
-            margin-top: 2.75rem;
-            display: flex;
-            align-items: center;
-            gap: 1.5rem;
-            flex-wrap: wrap;
-        }
-        .meta-item {
             display: flex;
             flex-direction: column;
-            gap: .3rem;
-        }
-        .meta-item b {
-            font-family: 'Iceberg', serif;
-            font-weight: 400;
-            -webkit-text-stroke: .35px currentColor;
-            font-size: 1.35rem;
-            line-height: 1;
-            letter-spacing: .01em;
-        }
-        .meta-item span {
-            font-size: .6rem;
-            letter-spacing: .18em;
-            text-transform: uppercase;
-            color: var(--faint);
-        }
-        .meta-sep {
-            width: 1px;
-            height: 2rem;
-            background: var(--line);
+            align-items: center;
+            gap: .9rem;
         }
 
-        /* --- Kolom kanan --- */
-        .hero-visual {
+        /* Stage — orbit rings + logo */
+        .intro-stage {
             position: relative;
+            width: 11rem;
+            height: 11rem;
             display: grid;
             place-items: center;
-            min-height: 20rem;
-            padding: 1.5rem 0;
+            margin-bottom: .25rem;
         }
-        .ring {
+        .intro-orbit {
             position: absolute;
-            top: 50%;
-            left: 50%;
-            width: min(26rem, 88%);
-            aspect-ratio: 1;
-            transform: translate(-50%, -50%);
-            border: 1px dashed var(--line-strong);
             border-radius: 50%;
-            animation: spin 44s linear infinite;
+            border: 1px dashed rgba(67,130,223,.4);
         }
-        .ring::after {
-            content: '';
+        .intro-orbit-1 {
+            inset: 0;
+            animation: spin360 8s linear infinite;
+        }
+        .intro-orbit-2 {
+            inset: 1.5rem;
+            border-color: rgba(255,255,255,.22);
+            animation: spin360 6s linear infinite reverse;
+        }
+        .intro-orbit-3 {
+            inset: 2.9rem;
+            border: 1px solid rgba(67,130,223,.65);
+            animation: spin360 4s linear infinite;
+        }
+        .intro-dot {
             position: absolute;
             top: -4px;
             left: 50%;
-            width: 7px;
-            height: 7px;
-            margin-left: -3.5px;
+            width: 8px;
+            height: 8px;
+            margin-left: -4px;
             border-radius: 50%;
-            background: var(--cyan);
-            box-shadow: 0 0 12px var(--cyan);
+            background: #4382DF;
+            box-shadow: 0 0 12px #4382DF, 0 0 24px rgba(67,130,223,.6);
         }
-        .blob {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            width: 24rem;
-            height: 24rem;
-            transform: translate(-50%, -50%);
-            background: radial-gradient(circle, var(--glow) 0%, transparent 65%);
-            filter: blur(14px);
-            pointer-events: none;
+        .intro-orbit-2 .intro-dot {
+            background: #fff;
+            box-shadow: 0 0 12px #fff, 0 0 24px rgba(255,255,255,.5);
+        }
+        .intro-orbit-3 .intro-dot {
+            background: #22D3EE;
+            box-shadow: 0 0 12px #22D3EE, 0 0 24px rgba(34,211,238,.7);
         }
 
-        .ticket-wrap {
+        /* Logo */
+        .intro-logo-wrap {
+            position: relative;
+            width: 5rem;
+            height: 5rem;
+            display: grid;
+            place-items: center;
+            animation: introLogoIn .9s cubic-bezier(.34,1.56,.64,1) .2s both;
+        }
+        .intro-logo-glow {
+            position: absolute;
+            inset: -35%;
+            border-radius: 50%;
+            pointer-events: none;
+            background: radial-gradient(circle, rgba(67,130,223,.55) 0%, transparent 70%);
+            animation: introGlowPulse 2s ease-in-out infinite;
+        }
+        .intro-logo {
             position: relative;
             width: 100%;
-            max-width: 22rem;
-            animation:
-                rise .8s cubic-bezier(.2,.8,.2,1) .35s forwards,
-                floaty 7s ease-in-out 1.3s infinite;
-            opacity: 0;
-        }
-        .ticket {
-            position: relative;
-            background: var(--panel);
-            border: 1px solid var(--line);
-            border-radius: 6px;
-            padding: 1.6rem;
-            box-shadow: var(--shadow);
-            -webkit-backdrop-filter: blur(10px);
-                    backdrop-filter: blur(10px);
-        }
-        .ticket::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 1.6rem;
-            right: 1.6rem;
-            height: 2px;
-            background: linear-gradient(90deg, transparent, var(--cyan), transparent);
-            opacity: .8;
-        }
-        .ticket-top {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            gap: 1rem;
-        }
-        .ticket-top .kicker { color: var(--faint); }
-        .status {
-            display: inline-flex;
-            align-items: center;
-            gap: .45rem;
-            font-size: .62rem;
-            letter-spacing: .16em;
-            text-transform: uppercase;
-            color: var(--accent-text);
-        }
-        .status i {
-            width: 6px;
-            height: 6px;
-            border-radius: 50%;
-            background: var(--cyan);
-            box-shadow: 0 0 8px var(--cyan);
-        }
-        .ticket-title {
-            margin: 1.1rem 0 0;
-            font-size: 1.6rem;
-            line-height: 1.08;
-        }
-        .ticket-tags {
-            margin-top: 1rem;
-            display: flex;
-            flex-wrap: wrap;
-            gap: .45rem;
-        }
-        .tag {
-            display: inline-flex;
-            align-items: center;
-            padding: .3rem .65rem;
-            border: 1px solid var(--line-strong);
-            border-radius: 999px;
-            font-size: .63rem;
-            letter-spacing: .1em;
-            text-transform: uppercase;
-            color: var(--muted);
-        }
-        .ticket-divider {
-            margin: 1.4rem 0;
-            height: 0;
-            border-top: 1px dashed var(--line-strong);
-        }
-        .ticket-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 1rem;
-        }
-        .ticket-grid .label {
-            margin: 0;
-            font-size: .58rem;
-            letter-spacing: .18em;
-            text-transform: uppercase;
-            color: var(--faint);
-        }
-        .ticket-grid .value {
-            margin: .4rem 0 0;
-            font-family: 'Iceberg', serif;
-            -webkit-text-stroke: .35px currentColor;
-            font-size: 1.05rem;
-            line-height: 1;
-        }
-        .ticket-grid .value.accent { color: var(--accent-text); }
-        .barcode {
-            margin-top: 1.5rem;
-            height: 30px;
-            border-radius: 2px;
-            opacity: .75;
-            background: repeating-linear-gradient(
-                90deg,
-                var(--text) 0 2px, transparent 2px 4px,
-                var(--text) 4px 7px, transparent 7px 9px,
-                var(--text) 9px 10px, transparent 10px 14px
-            );
+            height: 100%;
+            object-fit: contain;
+            filter: drop-shadow(0 0 22px rgba(67,130,223,.85));
+            animation: introLogoFloat 3s ease-in-out infinite;
         }
 
-        .float-chip {
-            position: absolute;
-            top: -.75rem;
-            right: -.5rem;
-            display: inline-flex;
-            align-items: center;
-            gap: .55rem;
-            padding: .6rem .9rem;
-            background: var(--bg);
-            border: 1px solid var(--line-strong);
-            border-radius: 999px;
-            font-size: .66rem;
-            letter-spacing: .1em;
+        /* Wordmark — letter reveal */
+        .intro-brand {
+            font-family: 'Bricolage Grotesque', sans-serif;
+            font-weight: 800;
+            font-size: 2rem;
+            letter-spacing: -.02em;
+            color: #fff;
+            display: flex;
+            flex-wrap: nowrap;
+            line-height: 1;
+        }
+        .intro-letter {
+            display: inline-block;
+            opacity: 0;
+            animation: introLetterIn .5s cubic-bezier(.34,1.56,.64,1) both;
+        }
+        .intro-letter:nth-child(1) { animation-delay: .30s; }
+        .intro-letter:nth-child(2) { animation-delay: .35s; }
+        .intro-letter:nth-child(3) { animation-delay: .40s; }
+        .intro-letter:nth-child(4) { animation-delay: .45s; }
+        .intro-letter:nth-child(5) { animation-delay: .50s; }
+        .intro-letter:nth-child(6) { animation-delay: .55s; }
+        .intro-letter:nth-child(7) { animation-delay: .60s; }
+        .intro-letter:nth-child(8) { animation-delay: .65s; }
+        .intro-letter.accent { color: #4382DF; }
+
+        /* Tagline */
+        .intro-tagline {
+            font-size: 10px;
+            letter-spacing: .3em;
             text-transform: uppercase;
-            color: var(--muted);
-            box-shadow: var(--shadow);
-            white-space: nowrap;
+            color: rgba(255,255,255,.55);
+            font-weight: 800;
+            animation: introFadeUp .5s ease .85s both;
         }
-        .float-chip b {
-            font-weight: 400;
-            color: var(--text);
-        }
-        .pulse {
+
+        /* Progress */
+        .intro-progress {
+            margin-top: .75rem;
+            width: 12rem;
+            height: 3px;
+            background: rgba(255,255,255,.08);
+            border-radius: 99px;
+            overflow: hidden;
             position: relative;
-            width: 7px;
-            height: 7px;
-            border-radius: 50%;
-            background: var(--cyan);
-            flex-shrink: 0;
+            animation: introFadeUp .5s ease .9s both;
         }
-        .pulse::after {
+        .intro-progress-fill {
+            height: 100%;
+            width: 0;
+            border-radius: inherit;
+            background: linear-gradient(90deg, #4382DF, #22D3EE);
+            animation: introBarFill 1s cubic-bezier(.4,0,.2,1) .6s forwards;
+            position: relative;
+            overflow: hidden;
+        }
+        .intro-progress-fill::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,.7), transparent);
+            animation: introShimmer 1.2s ease-in-out infinite;
+        }
+
+        /* Keyframes intro */
+        @keyframes spin360 { to { transform: rotate(360deg); } }
+        @keyframes introLogoIn {
+            0%   { transform: scale(.2) rotate(-180deg); opacity: 0; }
+            70%  { transform: scale(1.1) rotate(10deg);  opacity: 1; }
+            100% { transform: scale(1) rotate(0);        opacity: 1; }
+        }
+        @keyframes introLogoFloat {
+            0%, 100% { transform: translateY(0); }
+            50%      { transform: translateY(-6px); }
+        }
+        @keyframes introLetterIn {
+            0%   { opacity: 0; transform: translateY(20px) rotateX(-90deg); }
+            100% { opacity: 1; transform: translateY(0) rotateX(0); }
+        }
+        @keyframes introFadeUp {
+            from { opacity: 0; transform: translateY(10px); }
+            to   { opacity: 1; transform: none; }
+        }
+        @keyframes introBarFill {
+            from { width: 0; }
+            to   { width: 100%; }
+        }
+        @keyframes introShimmer {
+            0%   { transform: translateX(-100%); }
+            100% { transform: translateX(100%); }
+        }
+
+        /* ============================================================
+           PAGE TRANSITION — versi baru
+           ============================================================ */
+        .page-transition {
+            position: fixed;
+            inset: 0;
+            z-index: 9999;
+            display: grid;
+            place-items: center;
+            background: #090E39;
+            opacity: 0;
+            visibility: hidden;
+            pointer-events: none;
+            transition: opacity .35s ease, visibility 0s ease .35s;
+        }
+        .page-transition.is-active {
+            opacity: 1;
+            visibility: visible;
+            pointer-events: auto;
+            transition: opacity .35s ease, visibility 0s ease 0s;
+        }
+        /* Saat datang dari navigasi — tampil instan sebelum paint */
+        html.is-from-nav .page-transition {
+            opacity: 1;
+            visibility: visible;
+            pointer-events: auto;
+            transition: none;
+        }
+
+        .transition-bg-glow {
+            position: absolute;
+            inset: 0;
+            pointer-events: none;
+            background: radial-gradient(circle at 50% 45%, rgba(67,130,223,.18) 0%, transparent 60%);
+        }
+
+        .transition-content {
+            position: relative;
+            z-index: 2;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: .75rem;
+        }
+        .transition-mark {
+            position: relative;
+            width: 4rem;
+            height: 4rem;
+            display: grid;
+            place-items: center;
+            margin-bottom: .25rem;
+        }
+        .transition-mark::before,
+        .transition-mark::after {
             content: '';
             position: absolute;
             inset: 0;
             border-radius: 50%;
-            background: var(--cyan);
-            animation: ping 1.9s cubic-bezier(0,0,.2,1) infinite;
+            border: 2px solid #4382DF;
+            animation: transitionPulse 1.6s ease-out infinite;
         }
-
-        /* ============================================================
-           FOOTBAR
-           ============================================================ */
-        .footbar {
+        .transition-mark::after {
+            animation-delay: .8s;
+        }
+        @keyframes transitionPulse {
+            0%   { transform: scale(.9); opacity: .9; }
+            100% { transform: scale(2.2); opacity: 0; }
+        }
+        .transition-logo {
             position: relative;
             z-index: 2;
-            border-top: 1px solid var(--line);
-        }
-        .footbar-inner {
-            width: 100%;
-            max-width: 1180px;
-            margin: 0 auto;
-            padding: 1.15rem 1.5rem;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            flex-wrap: wrap;
-            gap: .9rem;
-            font-size: .6rem;
-            letter-spacing: .18em;
-            text-transform: uppercase;
-            color: var(--faint);
-        }
-        .footbar-inner .wm { font-size: .78rem; letter-spacing: .02em; }
-        .footbar-left {
-            display: inline-flex;
-            align-items: center;
-            gap: .7rem;
-        }
-        .footbar-left img {
-            width: 1.35rem;
-            height: 1.35rem;
+            width: 2.6rem;
+            height: 2.6rem;
             object-fit: contain;
-            display: block;
+            filter: drop-shadow(0 0 12px rgba(67,130,223,.7));
+            animation: transitionLogoPulse 1.2s ease-in-out infinite;
+        }
+        @keyframes transitionLogoPulse {
+            0%, 100% { transform: scale(1); }
+            50%      { transform: scale(1.1); }
+        }
+        .transition-brand {
+            font-family: 'Bricolage Grotesque', sans-serif;
+            font-weight: 800;
+            font-size: 1.4rem;
+            letter-spacing: -.02em;
+            color: #fff;
+        }
+        .transition-brand span { color: #4382DF; }
+        .transition-bar {
+            width: 6rem;
+            height: 3px;
+            border-radius: 99px;
+            overflow: hidden;
+            background: rgba(255,255,255,.08);
+        }
+        .transition-bar-fill {
+            height: 100%;
+            width: 40%;
+            border-radius: inherit;
+            background: linear-gradient(90deg, #4382DF, #22D3EE);
+            animation: transitionSlide 1.1s ease-in-out infinite;
+        }
+        @keyframes transitionSlide {
+            0%   { transform: translateX(-100%); }
+            100% { transform: translateX(250%); }
         }
 
-        /* ============================================================
-           RESPONSIVE
-           ============================================================ */
-        @media (max-width: 639px) {
-            .topbar { padding-top: 1.1rem; }
-            .link-login { display: none; }
-            .brand-tag { display: none; }
-            .hero-cta .btn { flex: 1 1 100%; }
-            .hero-meta { gap: 1.1rem; }
-            .meta-sep { height: 1.6rem; }
-            .float-chip { right: 0; font-size: .6rem; padding: .5rem .75rem; }
-        }
-        @media (max-width: 1023px) {
-            .hero-visual { margin-top: .5rem; }
-        }
-
-        /* ============================================================
-           REDUCED MOTION
-           ============================================================ */
+        /* ===== Reduced motion ===== */
         @media (prefers-reduced-motion: reduce) {
             *, *::before, *::after {
                 animation-duration: .01ms !important;
                 animation-iteration-count: 1 !important;
                 transition-duration: .01ms !important;
             }
-            .rise, .ticket-wrap { opacity: 1; }
-            .ring, .pulse::after { animation: none !important; }
+            .rise { opacity: 1; }
         }
     </style>
 </head>
-<body id="top">
+<body>
+
+{{-- ============================================================
+     INTRO LOADER
+     ============================================================ --}}
+<div id="intro-loader" class="intro-loader" aria-hidden="true">
+    <div class="intro-bg-glow"></div>
+    <div class="intro-content">
+        <div class="intro-stage">
+            <div class="intro-orbit intro-orbit-1"><span class="intro-dot"></span></div>
+            <div class="intro-orbit intro-orbit-2"><span class="intro-dot"></span></div>
+            <div class="intro-orbit intro-orbit-3"><span class="intro-dot"></span></div>
+            <div class="intro-logo-wrap">
+                <div class="intro-logo-glow"></div>
+                <img src="{{ asset('images/logo.png') }}" alt="Logo DIGANOVA" class="intro-logo" draggable="false">
+            </div>
+        </div>
+
+        <div class="intro-brand">
+            <span class="intro-letter">D</span>
+            <span class="intro-letter">I</span>
+            <span class="intro-letter">G</span>
+            <span class="intro-letter">A</span>
+            <span class="intro-letter accent">N</span>
+            <span class="intro-letter accent">O</span>
+            <span class="intro-letter accent">V</span>
+            <span class="intro-letter accent">A</span>
+        </div>
+
+        <div class="intro-tagline">Plan It. Join It. Enjoy It.</div>
+        <div class="intro-progress"><div class="intro-progress-fill"></div></div>
+    </div>
+</div>
+
+{{-- ============================================================
+     PAGE TRANSITION
+     ============================================================ --}}
+<div id="page-transition" class="page-transition" aria-hidden="true">
+    <div class="transition-bg-glow"></div>
+    <div class="transition-content">
+        <div class="transition-mark">
+            <img src="{{ asset('images/logo.png') }}" alt="Logo DIGANOVA" class="transition-logo" draggable="false">
+        </div>
+        <div class="transition-brand">DIGA<span>NOVA</span></div>
+        <div class="transition-bar"><div class="transition-bar-fill"></div></div>
+    </div>
+</div>
 
 @php
-    $logo = fn (string $class = '') =>
-        '<img src="' . asset('images/logo.png') . '" alt="Logo DIGANOVA" class="' . $class . '" draggable="false">';
+    /* ====== Icon library (Lucide-style stroke) ====== */
+    $icons = [
+        'hand'     => '<path d="M18 11V6a2 2 0 0 0-4 0v5"/><path d="M14 10V4a2 2 0 0 0-4 0v6"/><path d="M10 10.5V6a2 2 0 0 0-4 0v8"/><path d="M18 8a2 2 0 1 1 4 0v6a8 8 0 0 1-8 8h-2c-2.8 0-4.5-.86-5.99-2.34l-3.6-3.6a2 2 0 0 1 2.83-2.82L7 15"/>',
+        'ticket'   => '<path d="M2 9a3 3 0 0 1 0 6v2a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-2a3 3 0 0 1 0-6V7a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2z"/><path d="M13 5v2M13 17v2M13 11v2"/>',
+        'party'    => '<path d="M5.8 11.3 2 22l10.7-3.79"/><path d="M4 3h.01M22 8h.01M15 2h.01M22 20h.01"/><path d="m22 2-2.24.75a2.9 2.9 0 0 0-1.96 3.12c.1.86-.57 1.63-1.45 1.63h-.38c-.86 0-1.6.6-1.76 1.44L14 10"/><path d="m22 13-.82-.33c-.86-.34-1.82.2-1.98 1.11-.11.7-.72 1.22-1.43 1.22H17"/><path d="m11 2 .33.82c.34.86-.2 1.82-1.11 1.98C9.52 4.9 9 5.52 9 6.23V7"/><path d="M11 13c1.93 1.93 2.83 4.17 2 5-.83.83-3.07-.07-5-2-1.93-1.93-2.83-4.17-2-5 .83-.83 3.07.07 5 2z"/>',
+        'sparkles' => '<path d="M9.937 15.5A2 2 0 0 0 8.5 14.063l-6.135-1.582a.5.5 0 0 1 0-.962L8.5 9.936A2 2 0 0 0 9.937 8.5l1.582-6.135a.5.5 0 0 1 .963 0L14.063 8.5A2 2 0 0 0 15.5 9.937l6.135 1.581a.5.5 0 0 1 0 .964L15.5 14.063a2 2 0 0 0-1.437 1.437l-1.582 6.135a.5.5 0 0 1-.963 0z"/><path d="M20 3v4M22 5h-4M4 17v2M5 18H3"/>',
+        'music'    => '<path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/>',
+        'calendar' => '<rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/>',
+        'map-pin'  => '<path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0z"/><circle cx="12" cy="10" r="3"/>',
+        'mic'      => '<rect x="9" y="2" width="6" height="12" rx="3"/><path d="M19 10v2a7 7 0 0 1-14 0v-2M12 19v3"/>',
+        'shirt'    => '<path d="M20.38 3.46 16 2a4 4 0 0 1-8 0L3.62 3.46a2 2 0 0 0-1.34 2.23l.58 3.47a1 1 0 0 0 .99.84H6v10c0 1.1.9 2 2 2h8a2 2 0 0 0 2-2V10h2.15a1 1 0 0 0 .99-.84l.58-3.47a2 2 0 0 0-1.34-2.23z"/>',
+        'palette'  => '<circle cx="13.5" cy="6.5" r=".5"/><circle cx="17.5" cy="10.5" r=".5"/><circle cx="8.5" cy="7.5" r=".5"/><circle cx="6.5" cy="12.5" r=".5"/><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.93 0 1.5-.75 1.5-1.5 0-.39-.15-.73-.39-1-.23-.27-.38-.62-.38-1 0-.83.67-1.5 1.5-1.5H16c3.31 0 6-2.69 6-6 0-4.96-4.49-9-10-9z"/>',
+        'gamepad'  => '<path d="M6 11h4M8 9v4M15 12h.01M18 10h.01"/><path d="M17.32 5H6.68a4 4 0 0 0-3.98 3.59C2.6 9.42 2 14.46 2 16a3 3 0 0 0 3 3c1 0 1.5-.5 2-1l1.41-1.41A2 2 0 0 1 9.83 16h4.34a2 2 0 0 1 1.41.59L17 18c.5.5 1 1 2 1a3 3 0 0 0 3-3c0-1.54-.6-6.58-.69-7.26A4 4 0 0 0 17.32 5z"/>',
+    ];
 
-    $wordmark = fn (string $class = 'wm-sm') =>
-        '<span class="wm ' . $class . '">'
-        . '<span class="wm-ice">D</span><span class="wm-anta">I</span>'
-        . '<span class="wm-ice">G</span><span class="wm-anta">A</span>'
-        . '<span class="wm-ice">N</span><span class="wm-anta">OVA</span>'
-        . '</span>';
+    $icon = fn (string $name, string $class = 'w-5 h-5') =>
+        '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="' . $class . '" aria-hidden="true">' . ($icons[$name] ?? '') . '</svg>';
 @endphp
 
     <a href="#hero" class="skip-link">Langsung ke konten →</a>
 
-    {{-- BACKGROUND --}}
-    <div class="bg-layer" aria-hidden="true">
-        <div class="bg-glow"></div>
-        <div class="bg-grid"></div>
-    </div>
+    <div id="landing-page" class="relative min-h-screen bg-[#090E39] text-white overflow-hidden flex flex-col">
 
-    {{-- TOPBAR --}}
-    <header class="topbar rise" style="--i:0" role="banner">
-        <a href="#top" class="brand" aria-label="DIGANOVA — kembali ke atas">
-            {!! $logo() !!}
-            <span class="brand-text">
-                {!! $wordmark('wm-sm') !!}
-                <span class="brand-tag">Plan It. Join It. Enjoy It.</span>
-            </span>
-        </a>
+        {{-- ================= BACKGROUND DECOR ================= --}}
+        <div class="absolute inset-0 home-grid opacity-50 pointer-events-none" aria-hidden="true"></div>
+        <div class="absolute -top-40 -left-40 w-[38rem] h-[38rem] bg-[#4647AE]/40 rounded-full blur-[120px] pointer-events-none" aria-hidden="true"></div>
+        <div class="absolute top-1/3 -right-40 w-[38rem] h-[38rem] bg-[#4382DF]/25 rounded-full blur-[120px] pointer-events-none" aria-hidden="true"></div>
 
-        <div class="topbar-actions">
-            <button id="theme-toggle" class="theme-toggle" type="button" aria-label="Ganti tema terang / gelap">
-                <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                    <circle cx="12" cy="12" r="4"/>
-                    <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/>
-                </svg>
-                <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                    <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
-                </svg>
-            </button>
-
-            <a href="{{ route('login') }}" class="link-login">Login</a>
-            <a href="{{ route('register') }}" class="btn btn-primary btn-sm">Daftar</a>
-        </div>
-    </header>
-
-    {{-- MAIN — satu section --}}
-    <div class="hero-wrap">
-        <main id="hero" class="hero" role="main">
-
-            {{-- KIRI --}}
-            <div class="hero-copy">
-                <span class="eyebrow rise" style="--i:1">
-                    <span class="dot" aria-hidden="true"></span>
-                    Festival &amp; Komunitas · {{ date('Y') }}
-                </span>
-
-                <h1 class="h-display headline rise" style="--i:2">
-                    Temukan <span class="accent">festival</span><br class="br-lg">
-                    impianmu di {!! $wordmark('wm-inline') !!}.
-                </h1>
-
-                <p class="lede rise" style="--i:3">
-                    Satu platform untuk semua event musik, cosplay, seni, dan turnamen game.
-                    Gabung komunitas, ambil e-ticket, dan kumpulkan pencapaianmu.
-                </p>
-
-                <div class="hero-cta rise" style="--i:4">
-                    <a href="{{ route('register') }}" class="btn btn-primary">
-                        Mulai Sekarang <span aria-hidden="true">→</span>
-                    </a>
-                    <a href="{{ route('login') }}" class="btn btn-ghost">Masuk Akun</a>
+        {{-- ================= TOPBAR ================= --}}
+        <header class="relative z-20 max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 pt-6 pb-2 flex items-center justify-between gap-4 rise" style="--i:0" role="banner">
+            <a href="#hero" class="inline-flex items-center gap-3 group" aria-label="DIGANOVA — kembali ke atas">
+                <img src="{{ asset('images/logo.png') }}" alt="Logo DIGANOVA" class="w-10 h-10 object-contain drop-shadow-lg group-hover:scale-105 transition-transform" draggable="false">
+                <div class="leading-none">
+                    <div class="font-display font-extrabold text-lg sm:text-xl tracking-tight">
+                        DIGA<span class="text-[#4382DF]">NOVA</span>
+                    </div>
+                    <div class="text-[10px] tracking-[.18em] uppercase text-white/50 mt-1 hidden sm:block">
+                        Plan It. Join It. Enjoy It.
+                    </div>
                 </div>
+            </a>
 
-                <div class="hero-meta rise" style="--i:5">
-                    <div class="meta-item"><b>500+</b><span>Event</span></div>
-                    <div class="meta-sep" aria-hidden="true"></div>
-                    <div class="meta-item"><b>10K+</b><span>Member</span></div>
-                    <div class="meta-sep" aria-hidden="true"></div>
-                    <div class="meta-item"><b>24</b><span>Badge</span></div>
-                </div>
+            <div class="flex items-center gap-2 sm:gap-3">
+                <a href="{{ route('login') }}" class="hidden sm:inline-flex items-center px-4 py-2 text-sm font-extrabold text-white/80 hover:text-white transition-colors">
+                    Login
+                </a>
+                <a href="{{ route('register') }}"
+                   class="btn-3d ex-b inline-flex items-center gap-2 bg-[#4382DF] text-white px-5 py-2.5 rounded-2xl font-extrabold text-sm border-2 border-white">
+                    Daftar <span aria-hidden="true">→</span>
+                </a>
             </div>
+        </header>
 
-            {{-- KANAN --}}
-            <div class="hero-visual">
-                <div class="blob" aria-hidden="true"></div>
-                <div class="ring" aria-hidden="true"></div>
+        {{-- ================= HERO ================= --}}
+        <main id="hero" class="relative z-10 flex-1" role="main">
+            <section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-10 lg:pt-16 pb-16 grid lg:grid-cols-2 gap-10 lg:gap-12 items-center">
 
-                <div class="ticket-wrap">
-                    <div class="float-chip rise" style="--i:6">
-                        <span class="pulse" aria-hidden="true"></span>
-                        <span><b>12</b> slot tersisa</span>
+                {{-- ----- KIRI ----- --}}
+                <div class="text-center lg:text-left">
+
+                    <span class="rise hov-pop inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white text-[#090E39] text-sm font-bold extrude-sm ex-b mb-6" style="--i:1">
+                        <span class="relative flex h-2.5 w-2.5">
+                            <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#4382DF] opacity-75"></span>
+                            <span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-[#4647AE]"></span>
+                        </span>
+                        <span>Festival &amp; Komunitas · {{ date('Y') }}</span>
+                        <span class="text-[#4647AE]">{!! $icon('sparkles', 'w-4 h-4') !!}</span>
+                    </span>
+
+                    <h1 class="rise font-display text-4xl sm:text-5xl xl:text-6xl font-extrabold leading-[1.05] tracking-tight mb-5" style="--i:2">
+                        Temukan
+                        <span class="relative inline-block mx-1 my-1">
+                            <span class="absolute inset-0 bg-[#4647AE] -rotate-2 rounded-2xl extrude-sm ex-k" aria-hidden="true"></span>
+                            <span class="relative px-3">festival</span>
+                        </span>
+                        impianmu di sini.
+                    </h1>
+
+                    <p class="rise text-base sm:text-lg text-white/70 max-w-xl mx-auto lg:mx-0 mb-8" style="--i:3">
+                        Satu platform untuk semua event musik, cosplay, seni, dan turnamen game.
+                        Gabung komunitas, ambil e-ticket, dan kumpulkan pencapaianmu.
+                    </p>
+
+                    <div class="rise flex flex-wrap justify-center lg:justify-start gap-3 sm:gap-4 mb-10" style="--i:4">
+                        <a href="{{ route('register') }}"
+                           class="btn-3d ex-i inline-flex items-center gap-2 bg-[#4382DF] text-white px-6 py-3 rounded-2xl font-extrabold border-2 border-white text-sm sm:text-base">
+                            Mulai Sekarang <span aria-hidden="true">→</span>
+                        </a>
+                        <a href="{{ route('login') }}"
+                           class="btn-3d ex-k inline-flex items-center gap-2 bg-white text-[#090E39] px-6 py-3 rounded-2xl font-extrabold border-2 border-white text-sm sm:text-base">
+                            Masuk Akun
+                        </a>
                     </div>
 
-                    <article class="ticket">
-                        <div class="ticket-top">
-                            <span class="kicker">E-Ticket</span>
-                            <span class="status"><i aria-hidden="true"></i>Valid</span>
-                        </div>
-
-                        <h2 class="h-display ticket-title">Neon Night<br>Music Fest</h2>
-
-                        <div class="ticket-tags">
-                            <span class="tag">Musik</span>
-                            <span class="tag">Palembang</span>
-                            <span class="tag">Live</span>
-                        </div>
-
-                        <div class="ticket-divider" aria-hidden="true"></div>
-
-                        <div class="ticket-grid">
-                            <div>
-                                <p class="label">Tanggal</p>
-                                <p class="value">24 Agu</p>
-                            </div>
-                            <div>
-                                <p class="label">Kursi</p>
-                                <p class="value accent">VIP-07</p>
+                    <div class="rise flex flex-wrap justify-center lg:justify-start gap-3 sm:gap-4" style="--i:5">
+                        <div data-tilt data-rot="-2"
+                             class="hov-pop extrude-sm ex-b bg-white text-[#090E39] border-2 border-white rounded-2xl px-4 sm:px-5 py-3.5 flex items-center gap-3 min-w-[10rem]">
+                            <span class="grid place-items-center w-11 h-11 rounded-xl bg-[#4382DF] text-white shrink-0">
+                                {!! $icon('party', 'w-5 h-5') !!}
+                            </span>
+                            <div class="leading-tight text-left">
+                                <p class="font-display font-extrabold text-2xl">500+</p>
+                                <p class="text-[10px] uppercase tracking-widest font-extrabold text-[#112E81]/70">Event</p>
                             </div>
                         </div>
 
-                        <div class="barcode" aria-hidden="true"></div>
-                    </article>
+                        <div data-tilt data-rot="1.5"
+                             class="hov-pop extrude-sm ex-i bg-[#4382DF] text-[#090E39] border-2 border-white rounded-2xl px-4 sm:px-5 py-3.5 flex items-center gap-3 min-w-[10rem]">
+                            <span class="grid place-items-center w-11 h-11 rounded-xl bg-[#090E39] text-white shrink-0">
+                                {!! $icon('ticket', 'w-5 h-5') !!}
+                            </span>
+                            <div class="leading-tight text-left">
+                                <p class="font-display font-extrabold text-2xl">10K+</p>
+                                <p class="text-[10px] uppercase tracking-widest font-extrabold text-[#112E81]/70">Member</p>
+                            </div>
+                        </div>
+
+                        <div data-tilt data-rot="-1"
+                             class="hov-pop extrude-sm ex-b bg-white text-[#090E39] border-2 border-white rounded-2xl px-4 sm:px-5 py-3.5 flex items-center gap-3 min-w-[10rem]">
+                            <span class="grid place-items-center w-11 h-11 rounded-xl bg-[#4647AE] text-white shrink-0">
+                                {!! $icon('sparkles', 'w-5 h-5') !!}
+                            </span>
+                            <div class="leading-tight text-left">
+                                <p class="font-display font-extrabold text-2xl">24</p>
+                                <p class="text-[10px] uppercase tracking-widest font-extrabold text-[#112E81]/70">Badge</p>
+                            </div>
+                        </div>
+                    </div>
                 </div>
-            </div>
+
+                {{-- ----- KANAN ----- --}}
+                <div class="relative h-[26rem] sm:h-[30rem] md:h-[34rem] max-w-md mx-auto w-full" data-parallax>
+                    <div data-depth="40" class="absolute top-2 right-6">
+                        <div class="orb orb-lg breathe w-20 h-20"></div>
+                    </div>
+                    <div data-depth="55" class="absolute bottom-16 left-0">
+                        <div class="orb orb-i floaty-2 w-12 h-12"></div>
+                    </div>
+                    <div data-depth="30" class="absolute top-1/4 left-2">
+                        <div class="orb orb-w floaty w-8 h-8"></div>
+                    </div>
+
+                    <div data-depth="45" class="absolute top-4 left-6 wiggle w-16 h-16 rounded-2xl bg-white text-[#4647AE] grid place-items-center border-2 border-white extrude-sm ex-b">
+                        {!! $icon('sparkles', 'w-8 h-8') !!}
+                    </div>
+                    <div data-depth="35" class="absolute top-1/2 right-0 floaty w-14 h-14 rounded-full bg-[#4647AE] text-white border-2 border-white grid place-items-center extrude-sm ex-k">
+                        {!! $icon('music', 'w-6 h-6') !!}
+                    </div>
+
+                    <div data-depth="50" class="absolute top-16 right-0 inline-flex items-center gap-2 px-3 py-1.5 bg-white text-[#090E39] rounded-full border-2 border-white extrude-sm ex-b text-[11px] font-extrabold">
+                        <span class="relative flex h-2 w-2">
+                            <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#4382DF] opacity-75"></span>
+                            <span class="relative inline-flex rounded-full h-2 w-2 bg-[#4647AE]"></span>
+                        </span>
+                        12 slot tersisa
+                    </div>
+
+                    <div class="relative z-10 h-full flex flex-col items-center justify-between pt-6 pb-0">
+                        <img src="{{ asset('images/navo-mascot.png') }}"
+                             alt="Navo mascot"
+                             class="max-h-[55%] w-auto hover:scale-105 transition-transform duration-500 drop-shadow-2xl">
+
+                        <div class="w-64 sm:w-72 hov-pop" data-tilt data-rot="-2">
+                            <div class="bg-white text-[#090E39] rounded-2xl border-2 border-white extrude-sm ex-b p-4">
+                                <div class="flex items-center justify-between">
+                                    <span class="text-[10px] uppercase tracking-[.18em] font-extrabold text-[#4647AE]">E-Ticket</span>
+                                    <span class="inline-flex items-center gap-1 text-[10px] uppercase font-extrabold text-[#112E81]">
+                                        <span class="w-1.5 h-1.5 rounded-full bg-green-500"></span> Valid
+                                    </span>
+                                </div>
+                                <h3 class="font-display font-extrabold text-lg mt-2 leading-tight">
+                                    Neon Night Music Fest
+                                </h3>
+                                <div class="flex flex-wrap gap-1.5 mt-2">
+                                    <span class="text-[9px] uppercase tracking-widest font-extrabold px-2 py-0.5 rounded-full bg-[#4382DF] text-white">Musik</span>
+                                    <span class="text-[9px] uppercase tracking-widest font-extrabold px-2 py-0.5 rounded-full border-2 border-[#090E39]/20">Palembang</span>
+                                    <span class="text-[9px] uppercase tracking-widest font-extrabold px-2 py-0.5 rounded-full border-2 border-[#090E39]/20">Live</span>
+                                </div>
+                                <div class="border-t-2 border-dashed border-[#090E39]/15 mt-3 pt-3 grid grid-cols-2 gap-2">
+                                    <div>
+                                        <p class="text-[9px] uppercase tracking-widest font-extrabold text-[#112E81]/70">Tanggal</p>
+                                        <p class="font-display font-extrabold text-sm mt-0.5">24 Agu</p>
+                                    </div>
+                                    <div>
+                                        <p class="text-[9px] uppercase tracking-widest font-extrabold text-[#112E81]/70">Kursi</p>
+                                        <p class="font-display font-extrabold text-sm text-[#4647AE] mt-0.5">VIP-07</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
         </main>
+
+        {{-- ================= FOOTBAR ================= --}}
+        <footer class="relative z-10 border-t-2 border-white/10" role="contentinfo">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 flex items-center justify-between flex-wrap gap-4 text-[11px] uppercase tracking-widest font-extrabold text-white/50">
+                <span class="inline-flex items-center gap-3 flex-wrap">
+                    <img src="{{ asset('images/logo.png') }}" alt="Logo DIGANOVA" class="w-6 h-6 object-contain" draggable="false">
+                    <span>DIGA<span class="text-[#4382DF]">NOVA</span></span>
+                    <span class="text-white/30 hidden sm:inline">·</span>
+                    <span class="hidden sm:inline">Plan It. Join It. Enjoy It.</span>
+                </span>
+                <span>© {{ date('Y') }} DIGANOVA Events</span>
+            </div>
+        </footer>
     </div>
 
-    {{-- FOOTBAR --}}
-    <footer class="footbar rise" style="--i:7" role="contentinfo">
-        <div class="footbar-inner">
-            <span class="footbar-left">
-                {!! $logo() !!}
-                {!! $wordmark('wm-sm') !!}
-                <span>Plan It. Join It. Enjoy It.</span>
-            </span>
-            <span>© {{ date('Y') }} DIGANOVA Events</span>
-        </div>
-    </footer>
-
-    {{-- THEME TOGGLE --}}
+    {{-- ============================================================
+         INTRO + PAGE TRANSITION JS (v3 — robust + return fix)
+         ============================================================ --}}
     <script>
     (function () {
-        const root = document.documentElement;
-        const toggle = document.getElementById('theme-toggle');
-        if (!toggle) return;
+        const html = document.documentElement;
+        const trans = document.getElementById('page-transition');
+        const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-        toggle.addEventListener('click', () => {
-            const current = root.getAttribute('data-theme') || 'dark';
-            const next = current === 'dark' ? 'light' : 'dark';
-            root.setAttribute('data-theme', next);
-            localStorage.setItem('diganova.theme', next);
+        /* --------------------------------------------------------
+           1. INTRO (reload / first visit)
+           -------------------------------------------------------- */
+        if (html.classList.contains('show-intro')) {
+            const MIN_MS = 1600; // cukup untuk semua animasi intro selesai
+            const startedAt = performance.now();
+            let hidden = false;
+
+            const hideIntro = () => {
+                if (hidden) return;
+                hidden = true;
+                html.classList.remove('show-intro');
+            };
+
+            const tryHide = () => {
+                const elapsed = performance.now() - startedAt;
+                setTimeout(hideIntro, Math.max(0, MIN_MS - elapsed));
+            };
+
+            if (document.readyState !== 'loading') {
+                tryHide();
+            } else {
+                document.addEventListener('DOMContentLoaded', tryHide, { once: true });
+            }
+            setTimeout(hideIntro, 5000); // safety
+        }
+
+        /* --------------------------------------------------------
+           2. ARRIVAL — saat datang dari navigasi
+           Overlay sudah terlihat (is-from-nav). Fade out sekarang.
+           -------------------------------------------------------- */
+        if (html.classList.contains('is-from-nav') && trans) {
+            if (reduced) {
+                html.classList.remove('is-from-nav');
+            } else {
+                const anim = trans.animate(
+                    [{ opacity: 1 }, { opacity: 0 }],
+                    { duration: 420, easing: 'ease-out', fill: 'forwards' }
+                );
+
+                let finished = false;
+                const finish = () => {
+                    if (finished) return;
+                    finished = true;
+                    html.classList.remove('is-from-nav');
+                    try { anim.cancel(); } catch (e) {}
+                };
+                anim.onfinish = finish;
+                anim.oncancel = finish;
+                setTimeout(finish, 900);
+            }
+        }
+
+        /* --------------------------------------------------------
+           3. RETURN — user back button (bfcache restore)
+           FIX: tampilkan return transition, bukan langsung dihilangkan.
+           -------------------------------------------------------- */
+        window.addEventListener('pageshow', (e) => {
+            if (!e.persisted) return;
+
+            // Bersihkan class sisa dari state sebelumnya
+            html.classList.remove('is-from-nav');
+            html.classList.remove('show-intro');
+
+            if (!trans) return;
+
+            // Cancel animasi WAAPI yang mungkin masih nyangkut
+            if (typeof trans.getAnimations === 'function') {
+                trans.getAnimations().forEach(a => {
+                    try { a.cancel(); } catch (err) {}
+                });
+            }
+
+            // Reset semua inline style dari sesi sebelumnya
+            trans.style.cssText = '';
+            trans.classList.remove('is-active');
+
+            if (reduced) return;
+
+            // --- Tampilkan return transition ---
+            // 1. Tampil instan (tanpa transisi)
+            trans.style.transition = 'none';
+            trans.style.opacity = '1';
+            trans.style.visibility = 'visible';
+            trans.style.pointerEvents = 'auto';
+
+            // 2. Force reflow agar browser "melihat" state awal
+            void trans.offsetWidth;
+
+            // 3. Aktifkan transisi fade-out
+            trans.style.transition = 'opacity 0.45s ease-out, visibility 0s ease 0.45s';
+
+            // 4. Fade out setelah jeda singkat
+            setTimeout(() => {
+                trans.style.opacity = '0';
+                trans.style.visibility = 'hidden';
+                trans.style.pointerEvents = 'none';
+            }, 520);
+
+            // 5. Bersihkan inline style
+            setTimeout(() => {
+                trans.style.cssText = '';
+            }, 1200);
         });
 
-        window.matchMedia('(prefers-color-scheme: light)').addEventListener('change', (e) => {
-            if (localStorage.getItem('diganova.theme')) return;
-            root.setAttribute('data-theme', e.matches ? 'light' : 'dark');
+        /* --------------------------------------------------------
+           4. LEAVE — intercept link internal
+           -------------------------------------------------------- */
+        if (!reduced && trans) {
+            document.querySelectorAll('a[href]').forEach(link => {
+                link.addEventListener('click', (e) => {
+                    const href = link.getAttribute('href');
+                    if (!href) return;
+                    if (href.startsWith('#') || href.startsWith('mailto:') || href.startsWith('tel:') || href.startsWith('javascript:')) return;
+                    if (link.target === '_blank' || link.hasAttribute('download')) return;
+                    if (e.metaKey || e.ctrlKey || e.shiftKey || e.button !== 0) return;
+                    if (link.dataset.noTransition === 'true') return;
+
+                    try {
+                        const url = new URL(href, location.href);
+                        if (url.pathname === location.pathname && url.search === location.search) return;
+                    } catch (err) { return; }
+
+                    e.preventDefault();
+
+                    trans.classList.add('is-active');
+
+                    // Navigate lebih cepat — CSS yang urus fade-in (250ms)
+                    setTimeout(() => {
+                        window.location.href = href;
+                    }, 230);
+                });
+            });
+        }
+    })();
+
+    /* ============================================================
+       3D TILT + PARALLAX
+       ============================================================ */
+    (function () {
+        const reduce   = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+        const canHover = window.matchMedia('(hover: hover) and (pointer: fine)').matches;
+
+        if (reduce || !canHover) return;
+
+        document.querySelectorAll('[data-tilt]').forEach(el => {
+            const rot  = parseFloat(el.dataset.rot || 0);
+            const base = 'rotate(' + rot + 'deg)';
+            el.style.transform = base;
+
+            const glare = document.createElement('span');
+            glare.className = 'glare';
+            el.appendChild(glare);
+
+            el.addEventListener('mousemove', (e) => {
+                const r = el.getBoundingClientRect();
+                const x = (e.clientX - r.left) / r.width  - 0.5;
+                const y = (e.clientY - r.top)  / r.height - 0.5;
+                el.style.transform =
+                    'perspective(800px) ' + base +
+                    ' rotateX(' + (-y * 10).toFixed(2) + 'deg)' +
+                    ' rotateY(' + ( x * 10).toFixed(2) + 'deg)' +
+                    ' translateY(-4px)';
+                glare.style.setProperty('--gx', ((x + 0.5) * 100).toFixed(1) + '%');
+                glare.style.setProperty('--gy', ((y + 0.5) * 100).toFixed(1) + '%');
+            });
+            el.addEventListener('mouseleave', () => { el.style.transform = base; });
+        });
+
+        document.querySelectorAll('[data-parallax]').forEach(scene => {
+            const items = [...scene.querySelectorAll('[data-depth]')];
+            let tx = 0, ty = 0, cx = 0, cy = 0;
+
+            scene.addEventListener('mousemove', (e) => {
+                const r = scene.getBoundingClientRect();
+                tx = (e.clientX - r.left) / r.width  - 0.5;
+                ty = (e.clientY - r.top)  / r.height - 0.5;
+            });
+            scene.addEventListener('mouseleave', () => { tx = 0; ty = 0; });
+
+            (function loop() {
+                cx += (tx - cx) * 0.08;
+                cy += (ty - cy) * 0.08;
+                items.forEach(el => {
+                    const d = +el.dataset.depth;
+                    el.style.transform = 'translate3d(' + (-cx * d).toFixed(2) + 'px,' + (-cy * d).toFixed(2) + 'px,0)';
+                });
+                requestAnimationFrame(loop);
+            })();
         });
     })();
     </script>

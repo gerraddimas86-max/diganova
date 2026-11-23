@@ -11,11 +11,17 @@ use Illuminate\View\View;
 
 class LoginController extends Controller
 {
+    /**
+     * Tampilkan halaman login.
+     */
     public function show(): View
     {
         return view('auth.login');
     }
 
+    /**
+     * Proses login manual (email & password).
+     */
     public function store(LoginRequest $request): RedirectResponse
     {
         if (!Auth::attempt($request->only('email', 'password'), $request->boolean('remember'))) {
@@ -24,15 +30,20 @@ class LoginController extends Controller
 
         $request->session()->regenerate();
 
+        // Jika berhasil login, arahkan ke Hub
         return redirect()->route('hub')->with('success', 'Selamat datang kembali, ' . Auth::user()->name . '!');
     }
 
+    /**
+     * Proses logout.
+     */
     public function destroy(Request $request): RedirectResponse
     {
         Auth::logout();
         $request->session()->invalidate();
         $request->session()->regenerateToken();
 
-        return redirect('/')->with('success', 'Kamu telah logout.');
+        // ✅ UBAH BAGIAN INI: Arahkan ke rute login, bukan redirect('/')
+        return redirect()->route('login')->with('success', 'Kamu telah logout.');
     }
 }
