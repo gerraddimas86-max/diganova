@@ -35,8 +35,21 @@ use Illuminate\Support\Facades\Route;
 
 /*
 |--------------------------------------------------------------------------
-| DIGANOVA — Routing (Final Batch 7)
+| DIGANOVA — Routing (Path-Based, Refactored from Subdomain)
 |--------------------------------------------------------------------------
+|
+| URL Structure:
+|   /event       → Event domain
+|   /social      → Social domain
+|   /play        → Playground domain
+|   /hub         → Hub (domain selector)
+|
+| Route names TIDAK berubah (event.*, social.*, play.*), sehingga
+| route('...') di seluruh aplikasi tetap kompatibel.
+|
+| Alasan refactor: Google OAuth menolak HTTP untuk subdomain custom
+| (event.localhost, lvh.me, dll). Path-based di localhost = OAuth works.
+|
 */
 
 // ============ AUTH & SHARED ============
@@ -47,16 +60,16 @@ Route::middleware('guest')->group(function () {
     Route::post('/login', [LoginController::class, 'store']);
 });
 
-// ✅ RUTE GOOGLE OAUTH (Dipindahkan ke sini agar bisa diakses dari localhost)
+// ✅ RUTE GOOGLE OAUTH (di root — sudah terdaftar di Google Console)
 Route::get('/auth/google', [GoogleController::class, 'redirect'])->name('auth.google');
 Route::get('/auth/google/callback', [GoogleController::class, 'callback'])->name('auth.google.callback');
 
-// ✅ RUTE PENAMPUNG DOMAIN UTAMA (Mencegah 404 saat logout / akses localhost)
+// ✅ RUTE PENAMPUNG ROOT
 Route::get('/', function () {
     if (auth()->check()) {
-        return redirect()->route('hub'); // Jika sudah login, ke Hub
+        return redirect()->route('hub');
     }
-    return redirect()->route('login'); // Jika belum login, ke Halaman Login
+    return redirect()->route('login');
 });
 
 Route::middleware(['auth', 'update.last_seen'])->group(function () {
@@ -64,27 +77,29 @@ Route::middleware(['auth', 'update.last_seen'])->group(function () {
 
     // ============ HUB (Domain Selector) ============
     Route::get('/hub', [HubController::class, 'index'])->name('hub');
-    
-    // Redirect dashboard lama ke hub
-    Route::get('/dashboard', fn() => redirect()->route('hub'))->name('dashboard');
 
-    // ============ UNIFIED PROFILE (Part 5) ============
+    // Redirect dashboard lama ke hub
+    Route::get('/dashboard', fn () => redirect()->route('hub'))->name('dashboard');
+
+    // ============ UNIFIED PROFILE ============
     Route::get('/profile', [ProfileController::class, 'show'])->name('profile.show');
     Route::get('/profile/edit', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::put('/profile', [ProfileController::class, 'update'])->name('profile.update');
 });
 
-// ================================================================
-// DOMAIN: EVENT (diganova.test)
-// ================================================================
-Route::domain(config('app.event_domain'))->group(function () {
 
-    // -------- Halaman Depan (Guest Landing / Auth Home) --------
+// ================================================================
+// DOMAIN: EVENT — sekarang di /event/*
+// (sebelumnya: Route::domain(config('app.event_domain')))
+// ================================================================
+Route::prefix('event')->group(function () {
+
+    // -------- Halaman Depan Event --------
     Route::get('/', [EventController::class, 'home'])->name('event.home');
 
-    // -------- Auth Required (Semua fitur Event wajib login) --------
+    // -------- Auth Required --------
     Route::middleware(['auth', 'update.last_seen'])->group(function () {
-        
+
         // Event Public
         Route::get('/events', [EventController::class, 'index'])->name('event.events.index');
         Route::get('/events/{slug}', [EventController::class, 'show'])->name('event.events.show');
@@ -94,7 +109,7 @@ Route::domain(config('app.event_domain'))->group(function () {
         Route::post('/events/{slug}/register', [EventRegistrationController::class, 'store'])->name('event.registrations.store');
         Route::get('/registrations', [EventRegistrationController::class, 'index'])->name('event.registrations.index');
 
-        // E-Ticket (Urutan diperhatikan agar tidak bentrok)
+        // E-Ticket (urutan diperhatikan)
         Route::get('/registrations/{orderCode}/ticket', [TicketController::class, 'show'])->name('event.registrations.ticket');
         Route::get('/registrations/{orderCode}/ticket/download', [TicketController::class, 'download'])->name('event.registrations.ticket.download');
         Route::get('/registrations/{orderCode}', [EventRegistrationController::class, 'show'])->name('event.registrations.show');
@@ -109,7 +124,7 @@ Route::domain(config('app.event_domain'))->group(function () {
         Route::post('/groups/{group}/messages', [EventGroupController::class, 'messageStore'])->name('event.groups.messages.store');
     });
 
-    // -------- Admin Panel (auth + admin) --------
+    // -------- Admin Panel Event --------
     Route::middleware(['auth', 'admin', 'update.last_seen'])
         ->prefix('admin')
         ->name('admin.')
@@ -125,20 +140,22 @@ Route::domain(config('app.event_domain'))->group(function () {
         });
 });
 
-// ================================================================
-// DOMAIN: SOCIAL (social.diganova.test)
-// ================================================================
-Route::domain(config('app.social_domain'))->group(function () {
 
-    // -------- Halaman Depan (Guest Landing / Welcome Dashboard) --------
+// ================================================================
+// DOMAIN: SOCIAL — sekarang di /social/*
+// (sebelumnya: Route::domain(config('app.social_domain')))
+// ================================================================
+Route::prefix('social')->group(function () {
+
+    // -------- Halaman Depan Social --------
     Route::get('/', [SocialHomeController::class, 'home'])->name('social.home');
 
-    // -------- Auth Required (Semua fitur Social wajib login) --------
+    // -------- Auth Required --------
     Route::middleware(['auth', 'update.last_seen'])->group(function () {
-        
+
         // Feed Utama
         Route::get('/feed', [SocialPostController::class, 'index'])->name('social.posts.index');
-        
+
         // Profil publik
         Route::get('/u/{username}', [SocialProfileController::class, 'show'])->name('social.profile.show');
         Route::get('/profile/edit', [SocialProfileController::class, 'edit'])->name('social.profile.edit');
@@ -171,11 +188,11 @@ Route::domain(config('app.social_domain'))->group(function () {
         Route::get('/messages/unread-count', [SocialMessageController::class, 'unreadCount'])->name('social.messages.unread-count');
         Route::get('/messages/{username}', [SocialMessageController::class, 'show'])->name('social.messages.show');
         Route::post('/messages/{username}', [SocialMessageController::class, 'send'])->name('social.messages.send');
-        
-        // ✅ RUTE EDIT & HAPUS PESAN
+
+        // Edit & Hapus Pesan
         Route::put('/messages/{username}/{messageId}', [SocialMessageController::class, 'update'])->name('social.messages.update');
         Route::delete('/messages/{username}/{messageId}', [SocialMessageController::class, 'destroy'])->name('social.messages.destroy');
-        
+
         Route::get('/messages/{username}/poll', [SocialMessageController::class, 'poll'])->name('social.messages.poll');
 
         // Grup Sosial
@@ -185,7 +202,7 @@ Route::domain(config('app.social_domain'))->group(function () {
         Route::get('/groups/{group}/edit', [SocialGroupController::class, 'edit'])->name('social.groups.edit');
         Route::put('/groups/{group}', [SocialGroupController::class, 'update'])->name('social.groups.update');
         Route::delete('/groups/{group}', [SocialGroupController::class, 'destroy'])->name('social.groups.destroy');
-        
+
         // Member actions
         Route::post('/groups/{group}/join', [SocialGroupMemberController::class, 'join'])->name('social.groups.join');
         Route::post('/groups/{group}/leave', [SocialGroupMemberController::class, 'leave'])->name('social.groups.leave');
@@ -195,20 +212,22 @@ Route::domain(config('app.social_domain'))->group(function () {
         Route::post('/groups/{group}/promote/{user}', [SocialGroupMemberController::class, 'promote'])->name('social.groups.promote');
         Route::post('/groups/{group}/demote/{user}', [SocialGroupMemberController::class, 'demote'])->name('social.groups.demote');
 
-        // Detail Grup (Harus di bawah create)
+        // Detail Grup (harus di bawah create & edit)
         Route::get('/groups/{group}', [SocialGroupController::class, 'show'])->name('social.groups.show');
     });
 });
 
-// ================================================================
-// DOMAIN: PLAYGROUND (play.diganova.test)
-// ================================================================
-Route::domain(config('app.play_domain'))->group(function () {
 
-    // -------- Halaman Depan (Guest Landing / Cyber Lobby) --------
+// ================================================================
+// DOMAIN: PLAYGROUND — sekarang di /play/*
+// (sebelumnya: Route::domain(config('app.play_domain')))
+// ================================================================
+Route::prefix('play')->group(function () {
+
+    // -------- Halaman Depan Playground --------
     Route::get('/', [PlaygroundController::class, 'index'])->name('play.home');
 
-    // -------- Auth Required (Semua fitur Game wajib login) --------
+    // -------- Auth Required --------
     Route::middleware(['auth', 'update.last_seen'])->group(function () {
 
         // Navo Profile
@@ -235,7 +254,7 @@ Route::domain(config('app.play_domain'))->group(function () {
         Route::post('/battle/{battle}/skip', [PlaygroundBattleController::class, 'skip'])->name('play.battle.skip');
         Route::post('/battle/{battle}/forfeit', [PlaygroundBattleController::class, 'forfeit'])->name('play.battle.forfeit');
 
-        // Battle PvP (Urutan pvp/* harus sebelum {battle})
+        // Battle PvP (urutan: pvp/* HARUS sebelum {battle})
         Route::post('/battle/pvp/queue', [PlaygroundMatchmakingController::class, 'queue'])->name('play.battle.pvp.queue.start');
         Route::get('/battle/pvp/waiting', [PlaygroundMatchmakingController::class, 'queuePage'])->name('play.battle.pvp.queue');
         Route::get('/battle/pvp/status', [PlaygroundMatchmakingController::class, 'status'])->name('play.battle.pvp.status');
@@ -249,7 +268,7 @@ Route::domain(config('app.play_domain'))->group(function () {
         Route::get('/battle/pvp/{battle}/state', [PlaygroundPvpBattleController::class, 'state'])->name('play.battle.pvp.state');
         Route::post('/battle/pvp/{battle}/forfeit', [PlaygroundPvpBattleController::class, 'forfeit'])->name('play.battle.pvp.forfeit');
 
-        // Leaderboard & Gacha & Inventory
+        // Leaderboard, Gacha, Inventory
         Route::get('/leaderboard', [PlaygroundLeaderboardController::class, 'index'])->name('play.leaderboard');
         Route::get('/gacha', [PlaygroundGachaController::class, 'index'])->name('play.gacha.index');
         Route::post('/gacha/pull', [PlaygroundGachaController::class, 'pull'])->name('play.gacha.pull');

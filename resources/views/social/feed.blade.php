@@ -69,48 +69,6 @@
     html.light-mode .text-\[\#3B82F6\], html.light-mode .text-\[\#60A5FA\], html.light-mode .text-\[\#2563EB\] { color: #2563EB !important; }
     html:not(.light-mode) .text-\[\#3B82F6\], html:not(.light-mode) .text-\[\#60A5FA\] { color: #60A5FA !important; }
 
-    html .shadow-\[5px_5px_0_\#060D1F\],
-    html .shadow-\[4px_4px_0_\#060D1F\],
-    html .shadow-\[3px_3px_0_\#1E3A8A\],
-    html .shadow-\[2px_2px_0_\#1E3A8A\] { box-shadow: 5px 5px 0 var(--shadow-color) !important; }
-    
-    html .hover\:shadow-\[6px_6px_0_\#060D1F\]:hover,
-    html .hover\:shadow-\[5px_5px_0_\#1E3A8A\]:hover { box-shadow: 6px 6px 0 var(--shadow-color) !important; }
-
-    .dark-card-wrapper article {
-        background: var(--bg-card) !important;
-        border: 3px solid var(--border-card) !important;
-        box-shadow: 5px 5px 0 var(--shadow-color) !important;
-        border-radius: 20px !important;
-        transition: transform 0.3s ease, box-shadow 0.3s ease;
-    }
-    .dark-card-wrapper article:hover {
-        transform: translateY(-4px);
-        box-shadow: 7px 7px 0 var(--shadow-color) !important;
-    }
-
-    html:not(.light-mode) .dark-card-wrapper article,
-    html:not(.light-mode) .dark-card-wrapper article * {
-        color: #FFFFFF !important;
-    }
-    html:not(.light-mode) .dark-card-wrapper article .text-\[\#3B82F6\],
-    html:not(.light-mode) .dark-card-wrapper article .text-\[\#60A5FA\] { color: #60A5FA !important; }
-
-    html.light-mode .dark-card-wrapper article,
-    html.light-mode .dark-card-wrapper article * {
-        color: #000000 !important;
-    }
-    html.light-mode .dark-card-wrapper article .text-\[\#3B82F6\],
-    html.light-mode .dark-card-wrapper article .text-\[\#60A5FA\],
-    html.light-mode .dark-card-wrapper article .text-\[\#112E81\] { color: #2563EB !important; }
-
-    html.light-mode .dark-card-wrapper article a[href*="/hashtag/"],
-    html.light-mode .dark-card-wrapper article span[class*="bg-[#FACC15]"] {
-        background-color: #DBEAFE !important;
-        color: #1E3A8A !important; 
-        border-color: #93C5FD !important;
-    }
-
     .pagination-dark nav div:first-child { color: var(--text-muted); }
     .pagination-dark nav div:first-child span { background-color: var(--bg-card); border-color: var(--border-card); color: var(--text-muted); }
     .pagination-dark nav div:first-child a { background-color: var(--bg-card); border-color: var(--border-card); color: var(--text-secondary); transition: all 0.2s; }
@@ -146,7 +104,6 @@
                     <div class="flex items-start gap-4">
                         <div class="w-12 h-12 rounded-xl bg-[#3B82F6] border-[3px] border-[#1E3A8A] flex items-center justify-center text-white font-black flex-shrink-0 shadow-[2px_2px_0_#1E3A8A]">{{ strtoupper(substr(auth()->user()->name, 0, 1)) }}</div>
                         <div class="flex-1">
-                            <!-- ✅ FIX: Enter (tanpa Shift) → submit form. Shift+Enter → baris baru -->
                             <textarea name="body" 
                                       x-model="body" 
                                       @input="count = body.length" 
@@ -178,15 +135,11 @@
                 <p class="text-slate-400 text-sm font-medium">Jadilah yang pertama memulai percakapan!</p>
             </div>
         @else
-            <div class="space-y-8 mt-4">
+            <!-- LOOPING POST -->
+            <div class="space-y-6 mt-4">
                 @foreach ($posts as $post)
-                    <div class="relative mt-4">
-                        <div class="relative bg-[#0F1F3D] border-[3px] border-[#1E3A8A] rounded-[26px] p-1.5 shadow-[5px_5px_0_#060D1F] hover:-translate-y-1 transition-transform duration-300">
-                            <div class="dark-card-wrapper rounded-[20px] overflow-hidden relative z-10">
-                                @include('social.posts._card', ['post' => $post])
-                            </div>
-                        </div>
-                    </div>
+                    <!-- Hanya panggil card, wrapper ganda sudah dihapus -->
+                    @include('social.posts._card', ['post' => $post])
                 @endforeach
             </div>
             <div class="pt-8"><div class="pagination-dark">{{ $posts->links() }}</div></div>

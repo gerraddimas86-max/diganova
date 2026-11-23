@@ -20,6 +20,9 @@
     // Cek status online di awal load
     $isOnline = $other->last_seen_at && $other->last_seen_at->diffInMinutes(now()) < 5;
     $lastSeenText = $other->last_seen_at ? $other->last_seen_at->diffForHumans() : 'Tidak diketahui';
+
+    // ✅ URL builder — pakai route() supaya otomatis ikut prefix /social
+    $messagesBaseUrl = route('social.messages.send', ['username' => $other->username]);
 @endphp
 
 <style>
@@ -151,7 +154,8 @@
             currentUserId: {{ auth()->id() }},
             initialMessages: @js($initialMessages),
             initialIsOnline: {{ $isOnline ? 'true' : 'false' }},
-            initialLastSeen: '{{ $lastSeenText }}'
+            initialLastSeen: '{{ $lastSeenText }}',
+            messagesBaseUrl: '{{ $messagesBaseUrl }}'
          })"
          x-init="init()">
 
@@ -357,6 +361,9 @@ function dmChat(config) {
         pollInterval: null,
         lastMessageId: 0,
 
+        // ✅ Base URL (sudah termasuk /social) — dipakai semua fetch
+        messagesBaseUrl: config.messagesBaseUrl,
+
         // ✅ State untuk Last Seen
         isOnline: config.initialIsOnline,
         lastSeenText: config.initialLastSeen,
@@ -386,7 +393,10 @@ function dmChat(config) {
 
         async pollMessages() {
             try {
-                const url = `/messages/${config.username}/poll${this.lastMessageId > 0 ? '?after_id=' + this.lastMessageId : ''}`;
+                // ✅ FIX: pakai messagesBaseUrl (otomatis /social/messages/{username})
+                const url = this.messagesBaseUrl + '/poll'
+                    + (this.lastMessageId > 0 ? '?after_id=' + this.lastMessageId : '');
+
                 const res = await fetch(url, {
                     headers: {
                         'Accept': 'application/json',
@@ -427,7 +437,8 @@ function dmChat(config) {
 
             this.sending = true;
             try {
-                const res = await fetch(`/messages/${config.username}`, {
+                // ✅ FIX: POST ke messagesBaseUrl
+                const res = await fetch(this.messagesBaseUrl, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -469,7 +480,8 @@ function dmChat(config) {
             this.updating = true;
 
             try {
-                const res = await fetch(`/messages/${config.username}/${id}`, {
+                // ✅ FIX: PUT ke messagesBaseUrl/{id}
+                const res = await fetch(this.messagesBaseUrl + '/' + id, {
                     method: 'PUT',
                     headers: {
                         'Content-Type': 'application/json',
@@ -514,7 +526,8 @@ function dmChat(config) {
             this.deleting = true;
 
             try {
-                const res = await fetch(`/messages/${config.username}/${id}`, {
+                // ✅ FIX: DELETE ke messagesBaseUrl/{id}
+                const res = await fetch(this.messagesBaseUrl + '/' + id, {
                     method: 'DELETE',
                     headers: {
                         'Content-Type': 'application/json',
