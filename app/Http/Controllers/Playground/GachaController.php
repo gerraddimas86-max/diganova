@@ -20,10 +20,20 @@ class GachaController extends Controller
     {
         $user = auth()->user();
 
-        $allItems = GachaItem::where('is_active', true)
-            ->orderByRaw("FIELD(rarity, 'legendary', 'epic', 'rare', 'common')")
-            ->orderBy('id')
-            ->get();
+        
+    $allItems = GachaItem::where('is_active', true)
+        ->orderByRaw("
+            CASE rarity
+                WHEN 'legendary' THEN 1
+                WHEN 'epic' THEN 2
+                WHEN 'rare' THEN 3
+                WHEN 'common' THEN 4
+                ELSE 5
+            END
+        ")
+        ->orderBy('id', 'asc')
+        ->get();
+
 
         $ownedIds = $user->gachaItems()->pluck('gacha_items.id')->toArray();
 

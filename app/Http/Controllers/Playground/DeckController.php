@@ -73,7 +73,12 @@ class DeckController extends Controller
         $deck->load('cards');
 
         $allCards = Card::where('is_active', true)
-            ->orderByRaw("FIELD(type, 'attack', 'defense', 'skill')")
+            ->orderByRaw("CASE 
+                WHEN type = 'attack' THEN 1 
+                WHEN type = 'defense' THEN 2 
+                WHEN type = 'skill' THEN 3 
+                ELSE 4 
+            END")
             ->orderBy('name')
             ->get();
 
