@@ -527,7 +527,7 @@
     .lp-container { display: flex; align-items: baseline; gap: 4px; margin-top: 2px; }
     .lp-label { font-size: 9px; font-weight: 900; color: rgba(255,255,255,0.5); }
     .lp-value { font-size: 18px; font-weight: 900; font-family: 'Orbitron', sans-serif; color: var(--c-cyan); text-shadow: 0 0 10px rgba(34, 228, 255, 0.5); }
-    .zone-enemy .lp-value { color: #8A8CFF; text-shadow: 0 0 10px rgba(138, 140, 255, 0.5); }
+    .zone-enemy .lp-value { color: ; text-shadow: 0 0 10px rgba(138, 140, 255, 0.5); }
 
     .hand-deck-info { display: flex; gap: 8px; }
     .info-badge { flex: 1; display: flex; align-items: center; justify-content: center; gap: 5px; padding: 4px; border-radius: 4px; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.1); font-size: 11px; font-weight: 800; color: #B9C2DA; }
