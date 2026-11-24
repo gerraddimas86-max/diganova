@@ -68,10 +68,17 @@ class NavoProfileController extends Controller
         }
 
         $skins = NavoSkin::orderBy('is_default', 'desc')
-            ->orderByRaw("FIELD(rarity, 'common', 'rare', 'epic', 'legendary')")
+            ->orderByRaw("
+                CASE rarity
+                    WHEN 'common'    THEN 1
+                    WHEN 'rare'      THEN 2
+                    WHEN 'epic'      THEN 3
+                    WHEN 'legendary' THEN 4
+                    ELSE 5
+                END
+            ")
             ->orderBy('id')
             ->get();
-
         return view('playground.profile.skins', compact('user', 'profile', 'skins'));
     }
 
